@@ -1,4 +1,5 @@
 var debug = require('debug')('kcapp-announcer');
+
 var axios = require('axios');
 var moment = require('moment');
 var io = require("socket.io-client");
@@ -13,19 +14,20 @@ var GUI_URL = BASE_URL;
 
 var token = process.env.SLACK_KEY || "<slack_key_goes_here>";
 var channel = process.env.SLACK_CHANNEL || "<channel_id_goes_here>";
-var DO_ANNOUNCE = true;
+var doAnnounce = process.env.ANNOUNCE || false;
 
 const { WebClient } = require('@slack/web-api');
 const web = new WebClient(token);
 
+var message = require('./slack-message')(GUI_URL, channel);
 var socket = io(BASE_URL + ":3000/active");
 
+// TODO Make map of all current legs
 var currentThread;
 
 function postToSlack(json) {
-    json.channel = channel;
     debug(JSON.stringify(json));
-    if (DO_ANNOUNCE) {
+    if (doAnnounce) {
         (async () => {
             try {
                 const response = await web.chat.postMessage( json );
@@ -37,15 +39,14 @@ function postToSlack(json) {
             } catch (error) {
                 debug(`Error when posting to slack: ${JSON.stringify(error.data)}`);
             }
-            })();
+        })();
     }
 }
 
 function editMessage(json) {
-    json.channel = channel;
     json.ts = `"${currentThread}"`;
     debug(JSON.stringify(json));
-    if (DO_ANNOUNCE) {
+    if (doAnnounce) {
         (async () => {
             try {
                 const response = await web.chat.update( json );
@@ -53,11 +54,11 @@ function editMessage(json) {
             } catch (error) {
                 debug(`Error when posting to slack: ${JSON.stringify(error.data)}`);
             }
-            })();
+        })();
     }
 }
 
-function getMatchStartText(match, players) {
+/*function getMatchStartText(match, players) {
     var homePlayer = players[0];
     var awayPlayer = players[1];
 
@@ -93,7 +94,7 @@ function getMatchEndText(match, players) {
                 "mrkdwn_in": [ "text" ]
             }
         ] };
-}
+}*/
 
 socket.on('order_changed', function (data) {
     var legId = data.leg_id;
@@ -107,7 +108,7 @@ socket.on('order_changed', function (data) {
                         .then(response => {
                             var match = response.data;
                             if (match.tournament_id !== null && match.tournament.office_id == officeId) {
-                                postToSlack(getMatchStartText(match, players));
+                                postToSlack(message.matchStarted(match, players));
                             } else {
                                 debug("Skipping announcement of unofficial match...");
                             }
@@ -129,10 +130,11 @@ socket.on('leg_finished', function (data) {
         .then(response => {
             var players = response.data;
             if (match.is_finished && match.tournament_id !== null && match.tournament.office_id == officeId) {
-                editMessage(getMatchEndText(match, players));
+                editMessage(message.matchEnded(match, players));
                 currentThread = undefined;
             } else {
                 // TODO add message to thread with who won the leg
+                // TODO Always post message
                 postToSlack( {
                      "text": "Leg finished",
                      "thread_ts" : `"${currentThread}"`
