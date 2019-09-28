@@ -5,9 +5,7 @@ Simple `node` script which listens for certain events from `socket.io` and annou
 ## Install
 1. Clone repository `git clone https://github.com/kcapp/enhancements.git`
 2. Install all node dependencies `npm install`
-3. Set your `Slack` key in `kcapp-announcer.js` as `SLACK_KEY`
-4. Run with `node kcapp-announcer.js`
+4. Run with `ANNOUNCE=true SLACK_CHANNEL=<channel> SLACK_KEY=<key> DEBUG=kcapp* npm start`
 
-## Update
-1. Pull latest changes `git pull`
-2. Install all new `node` dependencies `npm install`
+### Service
+To run this as a service see [kcapp-announcer.service](https://github.com/kcapp/services/blob/master/kcapp-announcer.service)
