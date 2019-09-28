@@ -2,15 +2,13 @@ var debug = require('debug')('kcapp-announcer');
 
 var axios = require('axios');
 var moment = require('moment');
-var io = require("socket.io-client");
 var schedule = require("node-schedule");
 var _ = require("underscore");
 
 var officeId = process.argv[2] || 1;
 
-var BASE_URL = "http://localhost";
-var API_URL = BASE_URL + ":8001";
-var GUI_URL = BASE_URL;
+var API_URL = "http://localhost:8001";
+var GUI_URL = "http://localhost:3000";
 
 var token = process.env.SLACK_KEY || "<slack_key_goes_here>";
 var channel = process.env.SLACK_CHANNEL || "<channel_id_goes_here>";
@@ -20,21 +18,18 @@ const { WebClient } = require('@slack/web-api');
 const web = new WebClient(token);
 
 var message = require('./slack-message')(GUI_URL, channel);
-var socket = io(BASE_URL + ":3000/active");
 
-// TODO Make map of all current legs
-var currentThread;
+var threads = {};
 
-function postToSlack(json) {
-    debug(JSON.stringify(json));
+function postToSlack(matchId, msg) {
+    debug(`Posting message ${JSON.stringify(msg)}`);
     if (doAnnounce) {
         (async () => {
             try {
-                const response = await web.chat.postMessage( json );
-                debug(response);
-                if (!currentThread) {
-                    currentThread = response.ts;
-                    debug(`Current thread is ${currentThread}`)
+                const response = await web.chat.postMessage(msg);
+                if (!threads[matchId]) {
+                    threads[matchId] = response.ts;
+                    debug(`Thread for match ${matchId} is ${threads[matchId]}`)
                 }
             } catch (error) {
                 debug(`Error when posting to slack: ${JSON.stringify(error.data)}`);
@@ -43,108 +38,19 @@ function postToSlack(json) {
     }
 }
 
-function editMessage(json) {
-    json.ts = `"${currentThread}"`;
-    debug(JSON.stringify(json));
+function editMessage(matchId, msg) {
+    msg.ts = threads[matchId];
+    debug(`Editing message ${JSON.stringify(msg)}`);
     if (doAnnounce) {
         (async () => {
             try {
-                const response = await web.chat.update( json );
-                debug(response);
+                const response = await web.chat.update(msg);
             } catch (error) {
                 debug(`Error when posting to slack: ${JSON.stringify(error.data)}`);
             }
         })();
     }
 }
-
-/*function getMatchStartText(match, players) {
-    var homePlayer = players[0];
-    var awayPlayer = players[1];
-
-    return {
-            "text": "",
-            "attachments": [
-                {
-                    "fallback": "Official Match",
-                    "author_name": "Official Match Started :trophy:",
-                    "title": `${match.tournament.tournament_group_name}`,
-                    "text": `:dart: <${GUI_URL}/players/${homePlayer.player_id}/statistics|${homePlayer.player_name}> vs. <${GUI_URL}/players/${awayPlayer.player_id}/statistics|${awayPlayer.player_name}> is about to start. <${GUI_URL}/matches/${match.id}/spectate|Spectate>`,
-                    "mrkdwn_in": [ "text" ]
-                }
-            ]
-        };
-}
-
-function getMatchEndText(match, players) {
-    var homePlayer = players[0];
-    var awayPlayer = players[1];
-
-    var homePlayerWins = homePlayer.wins ? homePlayer.wins : 0;
-    var awayPlayerWins = awayPlayer.wins ? awayPlayer.wins : 0;
-
-    return {
-        "text": "",
-        "attachments": [
-            {
-                "fallback": "Official Match",
-                "author_name": "Official Match Finished :trophy:",
-                "title": `${match.tournament.tournament_group_name}`,
-                "text": `:checkered_flag: <${GUI_URL}/players/${homePlayer.player_id}/statistics|${homePlayer.player_name}> ${homePlayerWins} - ${awayPlayerWins} <${GUI_URL}/players/${awayPlayer.player_id}/statistics|${awayPlayer.player_name}>. <${GUI_URL}/matches/${match.id}/result|Result>`,
-                "mrkdwn_in": [ "text" ]
-            }
-        ] };
-}*/
-
-socket.on('order_changed', function (data) {
-    var legId = data.leg_id;
-    axios.get(API_URL + "/leg/" + legId)
-        .then(response => {
-            var leg = response.data;
-            axios.get(API_URL + "/leg/" + legId + "/players")
-                .then(response => {
-                    var players = response.data;
-                    axios.get(API_URL + "/match/" + leg.match_id)
-                        .then(response => {
-                            var match = response.data;
-                            if (match.tournament_id !== null && match.tournament.office_id == officeId) {
-                                postToSlack(message.matchStarted(match, players));
-                            } else {
-                                debug("Skipping announcement of unofficial match...");
-                            }
-                        }).catch(error => {
-                            debug(error);
-                        });
-                }).catch(error => {
-                    debug(error);
-                });
-        }).catch(error => {
-            debug(error);
-        });
-});
-
-socket.on('leg_finished', function (data) {
-    var match = data.match;
-
-    axios.get(API_URL + "/leg/" + match.legs[0].id + "/players")
-        .then(response => {
-            var players = response.data;
-            if (match.is_finished && match.tournament_id !== null && match.tournament.office_id == officeId) {
-                editMessage(message.matchEnded(match, players));
-                currentThread = undefined;
-            } else {
-                // TODO add message to thread with who won the leg
-                // TODO Always post message
-                postToSlack( {
-                     "text": "Leg finished",
-                     "thread_ts" : `"${currentThread}"`
-                    } );
-            }
-        })
-        .catch(error => {
-            debug(error);
-        });
-});
 
 // Post schedule of overdue matches every weekday at 09:00 CEST
 schedule.scheduleJob('0 8 * * 1-5', () => {
@@ -206,5 +112,47 @@ schedule.scheduleJob('0 8 * * 1-5', () => {
     });
 });
 
-debug(`Waiting for events to announce for office id ${officeId}...`);
+var kcapp = require('kcapp-sio-client/kcapp')("localhost", 3000);
+kcapp.connect(() => {
+    kcapp.on('order_changed', function (data) {
+        var legId = data.leg_id;
+        axios.get(API_URL + "/leg/" + legId).then(response => {
+                var leg = response.data;
+                axios.get(API_URL + "/leg/" + legId + "/players").then(response => {
+                        var players = response.data;
+                        axios.get(API_URL + "/match/" + leg.match_id).then(response => {
+                                var match = response.data;
+                                if (match.tournament_id !== null /*&& match.tournament.office_id == officeId*/) {
+                                    postToSlack(leg.match_id, message.matchStarted(match, players));
+                                } else {
+                                    debug("Skipping announcement of unofficial match...");
+                                }
+                            }).catch(error => {
+                                debug(error);
+                            });
+                    }).catch(error => {
+                        debug(error);
+                    });
+            }).catch(error => {
+                debug(error);
+            });
+    });
 
+    kcapp.on('leg_finished', function (data) {
+        var match = data.match;
+        var leg = data.leg;
+
+        axios.get(API_URL + "/leg/" + match.legs[0].id + "/players").then(response => {
+                var players = response.data;
+                postToSlack(match.id, message.legFinished(threads[match.id], players, match, leg, data.throw));
+                if (match.is_finished && match.tournament_id !== null /*&& match.tournament.office_id == officeId*/) {
+                    editMessage(match.id, message.matchEnded(match, players));
+                }
+            })
+            .catch(error => {
+                debug(error);
+            });
+    });
+});
+
+debug(`Waiting for events to announce for office id ${officeId}...`);
