@@ -27,7 +27,7 @@ function postToSlack(matchId, msg) {
         (async () => {
             try {
                 const response = await web.chat.postMessage(msg);
-                if (!threads[matchId]) {
+                if (matchId && !threads[matchId]) {
                     threads[matchId] = response.ts;
                     debug(`Thread for match ${matchId} is ${threads[matchId]}`)
                 }
@@ -66,7 +66,12 @@ schedule.scheduleJob('0 8 * * 1-5', () => {
             .then(response => {
                 var matches = response.data;
 
-                var text = `{ "text": "Pending Official Matches :trophy:", "attachments": [`
+                var msg = {
+                    text: "Pending Official Matches :trophy:",
+                    channel: channel,
+                    attachments: []
+                }
+
                 for (var groupId in matches) {
                     var group = matches[groupId];
 
@@ -89,19 +94,16 @@ schedule.scheduleJob('0 8 * * 1-5', () => {
                         groupMatches += `Week ${week}: ${homePlayerName} - ${awayPlayerName}\n`;
                     }
 
-                    text += `{
-                            "fallback": "${groups[groupId].name} Pending Matches",
-                            "author_name": "",
-                            "title": "${groups[groupId].name}",
-                            "text": "${groupMatches}",
-                            "mrkdwn_in": [ "text" ]
-                        },`
+                    msg.attachments.push({
+                        "fallback": `${groups[groupId].name} Pending Matches`,
+                        "author_name": "",
+                        "title": `${groups[groupId].name}`,
+                        "text": `${groupMatches}`,
+                        "mrkdwn_in": [ "text" ]
+                    });
                 }
-                text = text.substring(0, text.length - 1);
-                text += `] }`;
-
-                if (text !== `{ "text": "Pending Official Matches :trophy:", "attachments": ] }`) {
-                    postToSlack(text);
+                if (msg.attachments.length > 0) {
+                    postToSlack(undefined, msg);
                 }
             })
             .catch(error => {
