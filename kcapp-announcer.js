@@ -39,16 +39,20 @@ function postToSlack(matchId, msg) {
 }
 
 function editMessage(matchId, msg) {
-    msg.ts = threads[matchId];
-    debug(`Editing message ${JSON.stringify(msg)}`);
-    if (doAnnounce) {
-        (async () => {
-            try {
-                const response = await web.chat.update(msg);
-            } catch (error) {
-                debug(`Error when posting to slack: ${JSON.stringify(error.data)}`);
-            }
-        })();
+    if (threads[matchId]) {
+        msg.ts = threads[matchId];
+        debug(`Editing message ${JSON.stringify(msg)}`);
+        if (doAnnounce) {
+            (async () => {
+                try {
+                    const response = await web.chat.update(msg);
+                } catch (error) {
+                    debug(`Error when posting to slack: ${JSON.stringify(error.data)}`);
+                }
+            })();
+        }
+    } else {
+        debug(`Cannot edit message for ${matchId}. Missing thread_ts`);
     }
 }
 
