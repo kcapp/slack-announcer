@@ -8,7 +8,7 @@ var _ = require("underscore");
 var officeId = process.argv[2] || 1;
 
 var API_URL = "http://localhost:8001";
-var GUI_URL = "http://localhost:3000";
+var GUI_URL = process.env.GUI_URL || "http://localhost:3000";
 
 var token = process.env.SLACK_KEY || "<slack_key_goes_here>";
 var channel = process.env.SLACK_CHANNEL || "<channel_id_goes_here>";
@@ -128,7 +128,7 @@ kcapp.connect(() => {
                         var players = response.data;
                         axios.get(API_URL + "/match/" + leg.match_id).then(response => {
                                 var match = response.data;
-                                if (match.tournament_id !== null /*&& match.tournament.office_id == officeId*/) {
+                                if (match.tournament_id !== null && match.tournament.office_id == officeId) {
                                     postToSlack(leg.match_id, message.matchStarted(match, players));
                                 } else {
                                     debug("Skipping announcement of unofficial match...");

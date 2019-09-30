@@ -42,7 +42,10 @@ exports.matchEnded = (match, players) => {
 exports.legFinished = (thread, players, match, leg, finalThrow) => {
     var winner = players.find( (player) => { return player.player_id == leg.winner_player_id; }).player.first_name;
     var legNum = match.legs.length + (["st", "nd", "rd"][((match.legs.length + 90) % 100 - 10) % 10 - 1] || "th");
-    var checkout = finalThrow.first_dart.value * finalThrow.first_dart.multiplier + finalThrow.second_dart.value * finalThrow.second_dart.multiplier + finalThrow.third_dart.value * finalThrow.third_dart.multiplier;
+    var checkout = finalThrow.first_dart.value * finalThrow.first_dart.multiplier +
+        finalThrow.second_dart.value * finalThrow.second_dart.multiplier +
+        finalThrow.third_dart.value * finalThrow.third_dart.multiplier;
+
     return {
         "text": `${winner} wins the ${legNum} leg with a ${checkout} checkout!`,
         "thread_ts": `"${thread}"`,
