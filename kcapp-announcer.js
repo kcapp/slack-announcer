@@ -144,16 +144,18 @@ kcapp.connect(() => {
         var match = data.match;
         var leg = data.leg;
 
-        axios.get(API_URL + "/leg/" + match.legs[0].id + "/players").then(response => {
-                var players = response.data;
-                postToSlack(match.id, message.legFinished(threads[match.id], players, match, leg, data.throw));
-                if (match.is_finished && match.tournament_id !== null /*&& match.tournament.office_id == officeId*/) {
-                    editMessage(match.id, message.matchEnded(match, players));
-                }
-            })
-            .catch(error => {
-                debug(error);
-            });
+        if (match.tournament_id !== null && match.tournament.office_id == officeId) {
+            axios.get(API_URL + "/leg/" + match.legs[0].id + "/players").then(response => {
+                    var players = response.data;
+                    postToSlack(match.id, message.legFinished(threads[match.id], players, match, leg, data.throw));
+                    if (match.is_finished) {
+                        editMessage(match.id, message.matchEnded(match, players));
+                    }
+                })
+                .catch(error => {
+                    debug(error);
+                });
+        }
     });
 });
 
