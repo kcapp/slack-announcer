@@ -77,7 +77,7 @@ exports.legFinished = (thread, players, match, leg, finalThrow) => {
         checkoutDarts = "`" + formatThrow(first) + "` `" + formatThrow(second) + "`";
     }
     return {
-        "text": `${winner} wins the <${this.url}/legs/${leg.id}/result|${legNum} leg> with a ${checkout} (${checkoutDarts}) checkout after ${leg.darts_thrown} darts!`,
+        "text": `${winner} wins the <${this.url}/legs/${leg.id}/result|${legNum} leg> with a ${checkout} (${checkoutDarts}) checkout after ${leg.visits[leg.visits.length - 1].darts_thrown} darts!`,
         "thread_ts": `"${thread}"`,
         "channel": this.channel
     };
