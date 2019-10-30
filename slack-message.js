@@ -1,3 +1,25 @@
+function formatThrow(dart) {
+    if (dart.value == null) {
+        return "";
+    }
+    if (dart.value === 0) {
+        return "Miss";
+    }
+    if (dart.value === 25) {
+        if (dart.multiplier === 2) {
+            return "D-Bull";
+        }
+        return "Bull";
+    }
+
+    if (dart.multiplier === 3) {
+        return "T-" + dart.value;
+    } else if (dart.multiplier === 2) {
+        return "D-" + dart.value;
+    }
+    return dart.value;
+}
+
 exports.matchStarted = (match, players) => {
     var homePlayer = players[0];
     var awayPlayer = players[1];
@@ -42,12 +64,20 @@ exports.matchEnded = (match, players) => {
 exports.legFinished = (thread, players, match, leg, finalThrow) => {
     var winner = players.find( (player) => { return player.player_id == leg.winner_player_id; }).player.first_name;
     var legNum = match.legs.length + (["st", "nd", "rd"][((match.legs.length + 90) % 100 - 10) % 10 - 1] || "th");
-    var checkout = finalThrow.first_dart.value * finalThrow.first_dart.multiplier +
-        finalThrow.second_dart.value * finalThrow.second_dart.multiplier +
-        finalThrow.third_dart.value * finalThrow.third_dart.multiplier;
 
+    var first = finalThrow.first_dart;
+    var second = finalThrow.second_dart;
+    var third = finalThrow.third_dart;
+    var checkout = first.value * first.multiplier + second.value * second.multiplier + third.value * third.multiplier;
+
+    var checkoutDarts = "`" + formatThrow(first) + "` `" + formatThrow(second) + "` `" + formatThrow(third) + "`";
+    if (checkout - first.value * first.multiplier === 0) {
+        checkoutDarts = "`" + formatThrow(first) + "`";
+    } else if (checkout - first.value * first.multiplier - second.value * second.multiplier === 0) {
+        checkoutDarts = "`" + formatThrow(first) + "` `" + formatThrow(second) + "`";
+    }
     return {
-        "text": `${winner} wins the ${legNum} leg with a ${checkout} checkout!`,
+        "text": `${winner} wins the <${this.url}/legs/${leg.id}/result|${legNum} leg> with a ${checkout} (${checkoutDarts}) checkout after ${leg.darts_thrown} darts!`,
         "thread_ts": `"${thread}"`,
         "channel": this.channel
     };
