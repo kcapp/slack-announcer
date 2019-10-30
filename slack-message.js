@@ -32,7 +32,7 @@ exports.matchStarted = (match, players) => {
                 "fallback": "Official Match",
                 "author_name": "Official Match Started :trophy:",
                 "title": `${match.tournament.tournament_group_name}`,
-                "text": `:dart: <${this.url}/players/${homePlayer.player_id}/statistics|${homePlayer.player_name}> vs. <${this.url}/players/${awayPlayer.player_id}/statistics|${awayPlayer.player_name}> is about to start. <${this.url}/matches/${match.id}/spectate|Spectate>`,
+                "text": `:dart: <${this.url}/players/${homePlayer.player_id}/statistics|${homePlayer.player_name}> vs. <${this.url}/players/${awayPlayer.player_id}/statistics|${awayPlayer.player_name}>. <${this.url}/matches/${match.id}/spectate|Spectate>`,
                 "mrkdwn_in": [ "text" ]
             }
         ]
