@@ -12,6 +12,6 @@
     "kcapp-sio-client": "github:kcapp/kcapp-sio-client",
     "moment": "^2.24.0",
     "node-schedule": "^1.3.2",
-    "underscore": "^1.9.1"
+    "underscore": "^1.12.1"
   }
 }
