@@ -2,8 +2,6 @@
 # announcer
 Simple `node` script listening for certain events on `socket.io` and announce them in a [Slack](https://slack.com/) channel
 
-
-
 ## Example
 #### Match Started
 Once a official match starts, a message will be posted showing the two players and a link to spectate the match
