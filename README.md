@@ -1,5 +1,5 @@
-![kcapp logo](https://raw.githubusercontent.com/kcapp/frontend/master/public/images/logo.png)
-# announcer
+![kcapp logo](https://raw.githubusercontent.com/wiki/kcapp/frontend/images/logo/kcapp_plus_slack.png)
+# slack-announcer
 Simple `node` script listening for certain events on `socket.io` and announce them in a [Slack](https://slack.com/) channel
 
 ## Example
@@ -19,12 +19,18 @@ Once the match finishes, the original messag will be updated with the final resu
 ![Match Ended](https://raw.githubusercontent.com/wiki/kcapp/frontend/images/announcer/announter_result.png)
 
 ## Install
-1. Clone repository `git clone https://github.com/kcapp/enhancements.git`
-2. Install all dependencies `npm install`
-3. Run with `ANNOUNCE=true SLACK_CHANNEL=<channel> SLACK_KEY=<key> DEBUG=kcapp* npm start`
+1. Install all dependencies `npm install`
+2. Run with
+```
+ANNOUNCE=true SLACK_CHANNEL=<channel> SLACK_KEY=<key> DEBUG=kcapp* npm start
+# ... or
+SLACK_CHANNEL=<channel> SLACK_KEY=<key> npm run prod
+# ... or for development (will not actually post anything)
+npm run dev
+```
 
 ### Configuration
-To make the `announcer` work it must be linked to a [Slack app](https://api.slack.com/).
+To make the `slack-announcer` work it must be linked to a [Slack app](https://api.slack.com/).
 
 Configuration is done via the following environment variables
 * `ANNOUNCE`: By default no messages are posted, so this must be set to `true` to post. If not messages will only be logged out for debugging

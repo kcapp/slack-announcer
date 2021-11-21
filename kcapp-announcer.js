@@ -34,6 +34,7 @@ function postToSlack(matchId, msg) {
                     debug(`Thread for match ${matchId} is ${threads[matchId]}`)
                 }
             } catch (error) {
+                console.log(JSON.stringify(error));
                 debug(`Error when posting to slack: ${JSON.stringify(error.data)}`);
             }
         })();

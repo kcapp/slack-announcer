@@ -3,9 +3,9 @@
   "version": "0.0.2",
   "private": true,
   "scripts": {
-    "prod": "ANNOUNCE=true node kcapp-announcer",
+    "prod": "ANNOUNCE=true DEBUG=kcapp* node kcapp-announcer",
     "start": "node kcapp-announcer",
-    "dev": "ANNOUNCE=false node kcapp-announcer"
+    "dev": "ANNOUNCE=false DEBUG=kcapp* node kcapp-announcer"
   },
   "dependencies": {
     "@slack/web-api": "^6.4.0",
