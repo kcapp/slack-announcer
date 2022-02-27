@@ -1,13 +1,12 @@
 const debug = require('debug')('kcapp-announcer');
 
 const axios = require('axios');
-const moment = require('moment');
 const schedule = require("node-schedule");
 const _ = require("underscore");
 
 const officeId = parseInt(process.argv[2]) || 1;
 
-const API_URL = "http://localhost:8001";
+const API_URL = process.env.API_URL || "http://localhost:8001";
 const GUI_URL = process.env.GUI_URL || "http://localhost:3000";
 
 const token = process.env.SLACK_KEY || "<slack_key_goes_here>";
@@ -86,7 +85,9 @@ schedule.scheduleJob('0 8 * * 1-5', () => {
     });
 });
 
-const kcapp = require('kcapp-sio-client/kcapp')("localhost", 3000, "kcapp-announcer", "http");
+const host = GUI_URL.substring(GUI_URL.lastIndexOf("://") + 3, GUI_URL.lastIndexOf(":"));
+const port = parseInt(GUI_URL.substring(GUI_URL.lastIndexOf(":") + 1, GUI_URL.length));
+const kcapp = require('kcapp-sio-client/kcapp')(host, port, "kcapp-announcer", "http");
 kcapp.connect(() => {
     kcapp.on('order_changed', function (data) {
         const legId = data.leg_id;
