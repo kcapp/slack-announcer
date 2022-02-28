@@ -4,8 +4,6 @@ const axios = require('axios');
 const schedule = require("node-schedule");
 const _ = require("underscore");
 
-const officeId = parseInt(process.argv[2]) || 1;
-
 const API_URL = process.env.API_URL || "http://localhost:8001";
 const GUI_URL = process.env.GUI_URL || "http://localhost:3000";
 
@@ -13,7 +11,7 @@ const token = process.env.SLACK_KEY || "<slack_key_goes_here>";
 const channel = process.env.SLACK_CHANNEL || "<channel_id_goes_here>";
 const doAnnounce = (process.env.ANNOUNCE || false) === "true";
 if (doAnnounce) {
-    debug(`Posting messages to Slack is enabled`);
+    debug(`Posting messages to Slack is enabled!`);
 }
 
 const { WebClient } = require('@slack/web-api');
@@ -21,6 +19,14 @@ const web = new WebClient(token);
 
 const message = require('./slack-message')(GUI_URL, channel);
 const threads = {};
+
+if (process.argv[2] === "verify") {
+    debug(`Posting a test message to verify integration`);
+    postToSlack(null, message.testMessage());
+    debug("Done. If you can see the post in Slack, your integration work, if not look for any error above.");
+    process.exit(0);
+}
+const officeId = parseInt(process.argv[2]) || 1;
 
 function postToSlack(matchId, msg) {
     debug(`Posting message ${JSON.stringify(msg)}`);

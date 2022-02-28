@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "prod": "ANNOUNCE=true DEBUG=kcapp* node kcapp-announcer",
+    "verify": "ANNOUNCE=true DEBUG=kcapp* node kcapp-announcer verify",
     "start": "node kcapp-announcer",
     "dev": "ANNOUNCE=false DEBUG=kcapp* node kcapp-announcer"
   },

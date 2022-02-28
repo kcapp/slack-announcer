@@ -179,6 +179,22 @@ exports.tournamentMatches = (tournament, matches, players, groups) => {
     return msg;
 }
 
+exports.testMessage = () => {
+    return {
+        "text": "",
+        "channel": this.channel,
+        "attachments": [
+            {
+                "fallback": "Integration Test",
+                "author_name": "Slack Announcer Integration Test :fire:",
+                "title": "Test Title",
+                "text": "This is a test, if you can read this your `Slack Bot` is configured correctly :partying_face:",
+                "mrkdwn_in": [ "text" ]
+            }
+        ]
+    };
+}
+
 module.exports = (url, channel) => {
     this.url = url;
     this.channel = channel;

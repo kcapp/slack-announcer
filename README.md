@@ -20,7 +20,11 @@ Once the match finishes, the original messag will be updated with the final resu
 
 ## Install
 1. Install all dependencies `npm install`
-2. Run with
+2. Verify your integration with the following command, it will post a test message to verify the integration
+```
+SLACK_CHANNEL=<channel_id> SLACK_KEY=<oauth_token> npm start verify
+```
+3. Run with
 ```
 ANNOUNCE=true SLACK_CHANNEL=<channel> SLACK_KEY=<key> DEBUG=kcapp* npm start
 # ... or
