@@ -46,6 +46,18 @@ function postToSlack(matchId, msg) {
     }
 }
 
+function getReactionsPromise(matchId) {
+    try {
+        const thread = threads[matchId];
+        debug(`Getting reactions from message ${thread}`);
+        return web.reactions.get({ channel: channel, timestamp: thread });
+    } catch (error) {
+        console.log(JSON.stringify(error));
+        debug(`Error when sending DM: ${JSON.stringify(error.data)}`);
+    }
+}
+
+
 function editMessage(matchId, msg) {
     if (threads[matchId]) {
         msg.ts = threads[matchId];
@@ -125,15 +137,31 @@ kcapp.connect(() => {
 
         if (match.tournament_id !== null && match.tournament.office_id === officeId) {
             axios.get(`${API_URL}/leg/${match.legs[0].id}/players`).then(response => {
-                    const players = response.data;
-                    postToSlack(match.id, message.legFinished(threads[match.id], players, match, leg, data.throw));
-                    if (match.is_finished) {
-                        editMessage(match.id, message.matchEnded(match, players));
-                    }
-                })
-                .catch(error => {
-                    debug(error);
-                });
+                const players = response.data;
+                const thread = threads[match.id];
+                postToSlack(match.id, message.legFinished(thread, players, match, leg, data.throw));
+                if (match.is_finished) {
+                    editMessage(match.id, message.matchEnded(match, players));
+
+                    // Notify watching players that match is finished
+                    getReactionsPromise(match.id).then((response) => {
+                        const reactions = response.message.reactions;
+                        if (reactions) {
+                            const eyes = _.filter(reactions, (reaction) => reaction.name === "eyes");
+                            if (eyes) {
+                                const watching = eyes[0].users;
+                                for (const watcher of watching) {
+                                    debug(`Sending DM to ${watcher}`);
+                                    postToSlack(null, message.matchEndedDM(watcher, match, players));
+                                }
+                            }
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                debug(error);
+            });
         }
     });
 });

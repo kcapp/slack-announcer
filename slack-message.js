@@ -53,7 +53,7 @@ exports.matchStarted = (match, players) => {
 
     const text = `:dart: <${this.getPlayerStatisticsLink(home)}> vs. <${this.getPlayerStatisticsLink(away)}> is about to start. <${this.getMatchSpectateLink(match)}>`;
     return {
-        "text": "",
+        "text": ``,
         "channel": this.channel,
         "attachments": [
             {
@@ -80,19 +80,39 @@ exports.matchEnded = (match, players) => {
     const homeWins = home.wins ? home.wins : 0;
     const awayWins = away.wins ? away.wins : 0;
 
-    const text = `:checkered_flag: <${this.getPlayerStatisticsLink(home)}> ${homeWins} - ${awayWins} <${this.getPlayerStatisticsLink(away)}>. <${this.getMatchResultLink(match)}>`;
     return {
-        "text": "",
+        "text": ``,
         "channel": this.channel,
         "attachments": [
             {
                 "fallback": "Official Match",
                 "author_name": "Official Match Finished :trophy:",
                 "title": `${match.tournament.tournament_group_name}`,
-                "text": text,
+                "text": `:checkered_flag: <${this.getPlayerStatisticsLink(home)}> ${homeWins} - ${awayWins} <${this.getPlayerStatisticsLink(away)}>. <${this.getMatchResultLink(match)}>`,
                 "mrkdwn_in": [ "text" ]
             }
         ]
+    };
+}
+
+/**
+ * Get Slack template to send via DM to a player when a match ended
+ * @param {string} slackUser - Slack User ID
+ * @param {object} match - Match object
+ * @param {array} players - Array of home and away players
+ * @returns Slack template
+ */
+exports.matchEndedDM = (slackUser, match, players) => {
+    const home = players[0];
+    const away = players[1];
+
+    const homeWins = home.wins ? home.wins : 0;
+    const awayWins = away.wins ? away.wins : 0;
+
+    return {
+        "text": `:checkered_flag: \`${match.tournament.tournament_group_name}\` match between <${this.getPlayerStatisticsLink(home)}> and <${this.getPlayerStatisticsLink(away)}> finished ${homeWins} - ${awayWins}`,
+        "channel": slackUser,
+        "attachments": [ ]
     };
 }
 
@@ -179,9 +199,13 @@ exports.tournamentMatches = (tournament, matches, players, groups) => {
     return msg;
 }
 
+/**
+ * Get a Slack template to post a test mesage to verify integration
+ * @returns Slack template
+ */
 exports.testMessage = () => {
     return {
-        "text": "",
+        "text": "Test message to verify Slack Announcer working",
         "channel": this.channel,
         "attachments": [
             {
