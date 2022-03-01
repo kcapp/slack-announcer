@@ -24,7 +24,7 @@ if (process.argv[2] === "verify") {
     debug(`Posting a test message to verify integration`);
     postToSlack(null, message.testMessage());
     debug("Done. If you can see the post in Slack, your integration work, if not look for any error above.");
-    process.exit(0);
+    return;
 }
 const officeId = parseInt(process.argv[2]) || 1;
 
