@@ -129,7 +129,7 @@ exports.legFinished = (thread, players, match, leg, finalThrow) => {
     const winner = players.find( (player) => {
         return player.player_id === leg.winner_player_id;
     }).player.first_name;
-    const legNum = match.legs.length - 1 + (["st", "nd", "rd"][((match.legs.length - 1 + 90) % 100 - 10) % 10 - 1] || "th");
+    const legNum = match.legs.length + (["st", "nd", "rd"][((match.legs.length + 90) % 100 - 10) % 10 - 1] || "th");
 
     const first = finalThrow.first_dart;
     const second = finalThrow.second_dart;

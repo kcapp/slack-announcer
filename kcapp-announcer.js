@@ -155,6 +155,8 @@ kcapp.connect(() => {
                                     postToSlack(null, message.matchEndedDM(watcher, match, players));
                                 }
                             }
+                        } else {
+                            debug(`No eyes-reactions found`)
                         }
                     });
                 }
