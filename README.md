@@ -41,10 +41,13 @@ Configuration is done via the following environment variables
 * `SLACK_CHANNEL`: ID of the Slack channel to post to
 * `SLACK_KEY`: Bot User `OAuth Access Token`
 * `DEBUG`: value is passed to [debug](https://github.com/visionmedia/debug) module to specify which packages should be logged
+* `GUI_URL`: This is used for all links posted on Slack, defaults to `http://localhost:3000`
 
 If you are running on non-standard setup, you might also need to specify
 * `API_URL`: By default it assumes the API is running on `http://localhost:8001`
-* `GUI_URL`: By default it assumes the GUI is running on `http://localhost:3000` , this is used for all links posted on Slack
+* `KCAPP_HOST`: Host of `kcapp` socketio, default to `localhost`
+* `KCAPP_PORT`: Port of `kcapp` socketio, default to `3000`
+* `KCAPP_PROTO`: Protocol, default to `http`
 
 ### Service
 To run this as a service see [kcapp-announcer.service](https://github.com/kcapp/services/blob/master/kcapp-announcer.service)
