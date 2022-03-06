@@ -63,7 +63,6 @@ function getReactionsPromise(matchId) {
     }
 }
 
-
 function editMessage(matchId, msg) {
     if (threads[matchId]) {
         msg.ts = threads[matchId];
