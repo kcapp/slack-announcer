@@ -11,6 +11,8 @@ const KCAPP_HOST = process.env.KCAPP_HOST || "localhost";
 const KCAPP_PORT = process.env.KCAPP_PORT || 3000;
 const KCAPP_PROTO = process.env.KCAPP_PROTO || "http";
 
+const CRON_SCHEDULE = process.env.CRON_SCHEDULE || '0 8 * * 1-5';
+
 const token = process.env.SLACK_KEY || "<slack_key_goes_here>";
 const channel = process.env.SLACK_CHANNEL || "<channel_id_goes_here>";
 const doAnnounce = (process.env.ANNOUNCE || false) === "true";
@@ -80,8 +82,9 @@ function editMessage(matchId, msg) {
     }
 }
 
-// Post schedule of overdue matches every weekday at 09:00 CEST
-schedule.scheduleJob('0 8 * * 1-5', () => {
+// Post schedule of overdue matches based on a given schedule
+debug(`Scheduling posting of overdue matches: "${CRON_SCHEDULE}"`)
+schedule.scheduleJob(CRON_SCHEDULE, () => {
     axios.all([
         axios.get(`${API_URL}/player`),
         axios.get(`${API_URL}/tournament/groups`),
