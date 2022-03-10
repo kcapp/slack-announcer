@@ -37,7 +37,7 @@ exports.getMatchSpectateLink = (match) => {
 }
 
 exports.getMatchResultLink = (match) => {
-    return this.getLink(`/matches/${match.id}`, "Result");
+    return this.getLink(`/matches/${match.id}/result`, "Result");
 }
 
 exports.getPlayerStatisticsLink = (player) => {
@@ -132,7 +132,8 @@ exports.legFinished = (thread, players, match, leg, finalThrow) => {
     const winner = players.find( (player) => {
         return player.player_id === leg.winner_player_id;
     }).player.first_name;
-    const legNum = match.legs.length + (["st", "nd", "rd"][((match.legs.length + 90) % 100 - 10) % 10 - 1] || "th");
+    const currentLeg = match.is_finished ? match.legs.length : match.legs.length - 1;
+    const legNum = currentLeg + (["st", "nd", "rd"][((currentLeg + 90) % 100 - 10) % 10 - 1] || "th");
 
     const first = finalThrow.first_dart;
     const second = finalThrow.second_dart;
