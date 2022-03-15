@@ -32,7 +32,6 @@ if (process.argv[2] === "verify") {
     debug("Done. If you can see the post in Slack, your integration work, if not look for any error above.");
     return;
 }
-const officeId = parseInt(process.argv[2]) || 1;
 
 function postToSlack(matchId, msg) {
     debug(`Posting message ${JSON.stringify(msg)}`);
@@ -81,95 +80,115 @@ function editMessage(matchId, msg) {
     }
 }
 
-// Post schedule of overdue matches based on a given schedule
-debug(`Scheduling posting of overdue matches: "${CRON_SCHEDULE}"`)
-schedule.scheduleJob(CRON_SCHEDULE, () => {
-    axios.all([
-        axios.get(`${API_URL}/player`),
-        axios.get(`${API_URL}/tournament/groups`),
-        axios.get(`${API_URL}/tournament/current/${officeId}`)
-    ]).then(axios.spread((playersResponse, groupResponse, tournamentResponse) => {
-        const players = playersResponse.data;
-        const groups = groupResponse.data;
-        const tournament = tournamentResponse.data;
-        axios.get(`${API_URL}/tournament/${tournament.id}/matches`)
-            .then(response => {
-                const matches = response.data;
+async function parseOrGetActiveOffices() {
+  if(process.argv[2]) {
+    const parsedOfficeId = process.argv[2].split(',').map(int => parseInt(int, 10));
+    if (parsedOfficeId) {
+      return [parsedOfficeId];
+    }
+  }
 
-                const msg = message.tournamentMatches(tournament, matches, players, groups)
-                if (msg.attachments.length > 0) {
-                    postToSlack(undefined, msg);
-                }
-            })
-            .catch(error => {
-                debug(error);
-            });
-    })).catch(error => {
-        debug(error);
-    });
-});
+  try {
+    const response = await axios.get(`${API_URL}/office`);
+    return Object.values(response.data).flatMap((office => office.is_active ? [office.id] : []));
+  } catch (error) {
+    debug("Failed to fetch all active offices", error);
 
-const kcapp = require('kcapp-sio-client/kcapp')(KCAPP_HOST, KCAPP_PORT, "kcapp-announcer", KCAPP_PROTO);
-kcapp.connect(() => {
-    kcapp.on('order_changed', function (data) {
-        const legId = data.leg_id;
-        axios.get(`${API_URL}/leg/${legId}`).then(response => {
-                const leg = response.data;
-                axios.get(`${API_URL}/leg/${legId}/players`).then(response => {
-                        const players = response.data;
-                        axios.get(`${API_URL}/match/${leg.match_id}`).then(response => {
-                                const match = response.data;
-                                if (match.tournament_id !== null && match.tournament.office_id === officeId) {
-                                    postToSlack(leg.match_id, message.matchStarted(match, players));
-                                } else {
-                                    debug("Skipping announcement of unofficial match...");
-                                }
-                            }).catch(error => {
-                                debug(error);
-                            });
-                    }).catch(error => {
-                        debug(error);
-                    });
-            }).catch(error => {
-                debug(error);
-            });
+  }
+  return [1];
+}
+
+parseOrGetActiveOffices().then(officeIds => {
+    // Post schedule of overdue matches based on a given schedule
+    debug(`Scheduling posting of overdue matches: "${CRON_SCHEDULE}"`)
+    schedule.scheduleJob(CRON_SCHEDULE, () => {
+        axios.all([
+            axios.get(`${API_URL}/player`),
+            axios.get(`${API_URL}/tournament/groups`),
+            officeIds.map(office => axios.get(`${API_URL}/tournament/current/${office}`))
+        ]).then(axios.spread((playersResponse, groupResponse, tournamentResponse) => {
+            const players = playersResponse.data;
+            const groups = groupResponse.data;
+            const tournament = tournamentResponse.data;
+            axios.get(`${API_URL}/tournament/${tournament.id}/matches`)
+                .then(response => {
+                    const matches = response.data;
+
+                    const msg = message.tournamentMatches(tournament, matches, players, groups)
+                    if (msg.attachments.length > 0) {
+                        postToSlack(undefined, msg);
+                    }
+                })
+                .catch(error => {
+                    debug(error);
+                });
+        })).catch(error => {
+            debug(error);
+        });
     });
 
-    kcapp.on('leg_finished', function (data) {
-        const match = data.match;
-        const leg = data.leg;
+    const kcapp = require('kcapp-sio-client/kcapp')(KCAPP_HOST, KCAPP_PORT, "kcapp-announcer", KCAPP_PROTO);
+    kcapp.connect(() => {
+        kcapp.on('order_changed', function (data) {
+            const legId = data.leg_id;
+            axios.get(`${API_URL}/leg/${legId}`).then(response => {
+                    const leg = response.data;
+                    axios.get(`${API_URL}/leg/${legId}/players`).then(response => {
+                            const players = response.data;
+                            axios.get(`${API_URL}/match/${leg.match_id}`).then(response => {
+                                    const match = response.data;
+                                    if (match.tournament_id !== null && officeIds().includes(match.tournament.office_id)) {
+                                        postToSlack(leg.match_id, message.matchStarted(match, players));
+                                    } else {
+                                        debug("Skipping announcement of unofficial match...");
+                                    }
+                                }).catch(error => {
+                                    debug(error);
+                                });
+                        }).catch(error => {
+                            debug(error);
+                        });
+                }).catch(error => {
+                    debug(error);
+                });
+        });
 
-        if (match.tournament_id !== null && match.tournament.office_id === officeId) {
-            axios.get(`${API_URL}/leg/${match.legs[0].id}/players`).then(response => {
-                const players = response.data;
-                const thread = threads[match.id];
-                postToSlack(match.id, message.legFinished(thread, players, match, leg, data.throw));
-                if (match.is_finished) {
-                    editMessage(match.id, message.matchEnded(match, players));
+        kcapp.on('leg_finished', function (data) {
+            const match = data.match;
+            const leg = data.leg;
 
-                    // Notify watching players that match is finished
-                    getReactionsPromise(match.id).then((response) => {
-                        const reactions = response.message.reactions;
-                        if (reactions) {
-                            const eyes = _.filter(reactions, (reaction) => reaction.name === "eyes");
-                            if (eyes) {
-                                const watching = eyes[0].users;
-                                for (const watcher of watching) {
-                                    debug(`Sending DM to ${watcher}`);
-                                    postToSlack(null, message.matchEndedDM(watcher, match, players));
+            if (match.tournament_id !== null && officeIds().includes(match.tournament.office_id)) {
+                axios.get(`${API_URL}/leg/${match.legs[0].id}/players`).then(response => {
+                    const players = response.data;
+                    const thread = threads[match.id];
+                    postToSlack(match.id, message.legFinished(thread, players, match, leg, data.throw));
+                    if (match.is_finished) {
+                        editMessage(match.id, message.matchEnded(match, players));
+
+                        // Notify watching players that match is finished
+                        getReactionsPromise(match.id).then((response) => {
+                            const reactions = response.message.reactions;
+                            if (reactions) {
+                                const eyes = _.filter(reactions, (reaction) => reaction.name === "eyes");
+                                if (eyes) {
+                                    const watching = eyes[0].users;
+                                    for (const watcher of watching) {
+                                        debug(`Sending DM to ${watcher}`);
+                                        postToSlack(null, message.matchEndedDM(watcher, match, players));
+                                    }
                                 }
+                            } else {
+                                debug(`No eyes-reactions found`)
                             }
-                        } else {
-                            debug(`No eyes-reactions found`)
-                        }
-                    });
-                }
-            })
-            .catch(error => {
-                debug(error);
-            });
-        }
+                        });
+                    }
+                })
+                .catch(error => {
+                    debug(error);
+                });
+            }
+        });
     });
-});
 
-debug(`Waiting for events to announce for office id ${officeId}...`);
+    debug(`Waiting for events to announce for office id ${officeIds}...`);
+});
