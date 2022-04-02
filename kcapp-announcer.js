@@ -39,10 +39,14 @@ function postToSlack(matchId, msg) {
     if (doAnnounce) {
         (async () => {
             try {
-                const response = await web.chat.postMessage(msg);
-                if (matchId && !threads[matchId]) {
-                    threads[matchId] = response.ts;
-                    debug(`Thread for match ${matchId} is ${threads[matchId]}`)
+                if (threads[matchId]) {
+                    editMessage(matchId, msg);
+                } else {
+                    const response = await web.chat.postMessage(msg);
+                    if (matchId && !threads[matchId]) {
+                        threads[matchId] = response.ts;
+                        debug(`Thread for match ${matchId} is ${threads[matchId]}`)
+                    }
                 }
             } catch (error) {
                 console.log(JSON.stringify(error));
