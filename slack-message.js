@@ -36,6 +36,10 @@ exports.getMatchSpectateLink = (match) => {
     return this.getLink(`/matches/${match.id}/spectate`, "Spectate");
 }
 
+exports.getOddsLink = (match) => {
+    return this.getLink(`/odds/bets/${match.tournament_id}#${match.id}`, "Bets");
+}
+
 exports.getMatchResultLink = (match) => {
     return this.getLink(`/matches/${match.id}/result`, "Result");
 }
@@ -54,7 +58,7 @@ exports.matchStarted = (match, players) => {
     const home = players[0];
     const away = players[1];
 
-    const text = `:dart: <${this.getPlayerStatisticsLink(home)}> vs. <${this.getPlayerStatisticsLink(away)}> is about to start. <${this.getMatchSpectateLink(match)}>`;
+    const text = `:dart: <${this.getPlayerStatisticsLink(home)}> vs. <${this.getPlayerStatisticsLink(away)}> is about to start. <${this.getMatchSpectateLink(match)}> <${this.getOddsLink(match)}>`;
     return {
         "text": ``,
         "channel": this.channel,
