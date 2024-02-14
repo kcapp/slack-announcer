@@ -185,6 +185,7 @@ exports.tournamentMatches = (tournament, matches, players, groups) => {
         }
 
         let groupMatches = "";
+        let tournamentStart = moment(tournament.start_time).startOf('week');
         for (let i = newMatches.length - 1; i >= 0; i--) {
             const match = newMatches[i];
 
@@ -192,8 +193,8 @@ exports.tournamentMatches = (tournament, matches, players, groups) => {
             const homePlayerName = home.slack_handle ? `<${home.slack_handle}>` : home.name;
             const away = players[match.players[1]];
             const awayPlayerName = away.slack_handle ? `<${away.slack_handle}>` : away.name;
-            const week = moment(match.created_at).diff(moment(tournament.start_time), "weeks") + 1;
-            groupMatches += `Week ${week}: ${homePlayerName} - ${awayPlayerName}\n`;
+            const week = moment(match.created_at).startOf('week').diff(tournamentStart, "weeks") + 1;
+            groupMatches += `Game Week ${week}: ${homePlayerName} - ${awayPlayerName}\n`;
         }
 
         msg.attachments.push({
