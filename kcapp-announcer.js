@@ -92,18 +92,19 @@ schedule.scheduleJob(CRON_SCHEDULE, () => {
         const players = playersResponse.data;
         const groups = groupResponse.data;
         const tournament = tournamentResponse.data;
-        axios.get(`${API_URL}/tournament/${tournament.id}/matches`)
-            .then(response => {
-                const matches = response.data;
-
-                const msg = message.tournamentMatches(tournament, matches, players, groups)
-                if (msg.attachments.length > 0) {
-                    postToSlack(undefined, msg);
-                }
-            })
-            .catch(error => {
-                debug(error);
-            });
+        if (tournament.is_season) {
+            axios.get(`${API_URL}/tournament/${tournament.id}/matches`)
+                .then(response => {
+                    const matches = response.data;
+                    const msg = message.tournamentMatches(tournament, matches, players, groups)
+                    if (msg.attachments.length > 0) {
+                        postToSlack(undefined, msg);
+                    }
+                })
+                .catch(error => {
+                    debug(error);
+                });
+        }
     })).catch(error => {
         debug(error);
     });
@@ -119,7 +120,12 @@ kcapp.connect(() => {
                         const players = response.data;
                         axios.get(`${API_URL}/match/${leg.match_id}`).then(response => {
                                 const match = response.data;
+                                const matchId = match.id;
                                 if (match.tournament_id !== null && match.tournament.office_id === officeId) {
+                                    if (matchId && threads[matchId]) {
+                                        debug(`Not posing about match already started: ${matchId}`);
+                                        return;
+                                    }
                                     postToSlack(leg.match_id, message.matchStarted(match, players));
                                 } else {
                                     debug("Skipping announcement of unofficial match...");

@@ -1,6 +1,12 @@
 const moment = require("moment");
 const _ = require("underscore");
 
+const MATCH_TYPES = {
+    X01: 1,
+    SHOOTOUT: 2
+};
+
+
 function formatThrow(dart) {
     if (dart.value == null) {
         return "";
@@ -138,6 +144,15 @@ exports.legFinished = (thread, players, match, leg, finalThrow) => {
     }).player.first_name;
     const currentLeg = match.is_finished ? match.legs.length : match.legs.length - 1;
     const legNum = currentLeg + (["st", "nd", "rd"][((currentLeg + 90) % 100 - 10) % 10 - 1] || "th");
+
+    if (leg.leg_type.id === MATCH_TYPES.SHOOTOUT) {
+        const score = leg.visits[leg.visits.length - 1].scores[leg.winner_player_id];
+        return {
+            "text": `${winner} wins the <${this.getLegResultLink(leg, legNum)} leg> (Shootout) with a score of \`${score}\``,
+            "thread_ts": `"${thread}"`,
+            "channel": this.channel
+        };
+    }
 
     const first = finalThrow.first_dart;
     const second = finalThrow.second_dart;
