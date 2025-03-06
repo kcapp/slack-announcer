@@ -9,7 +9,7 @@
     "dev": "ANNOUNCE=false DEBUG=kcapp* node kcapp-announcer"
   },
   "dependencies": {
-    "@slack/web-api": "^6.4.0",
+    "@slack/web-api": "^7.8.0",
     "axios": "^0.21.2",
     "debug": "^4.4.0",
     "kcapp-sio-client": "github:kcapp/kcapp-sio-client#4f298b816e01e689d219abd55a6d4548bc2352f4",
