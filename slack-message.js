@@ -209,6 +209,10 @@ exports.tournamentMatches = (tournament, matches, players, groups) => {
             const away = players[match.players[1]];
             const awayPlayerName = away.slack_handle ? `<${away.slack_handle}>` : away.name;
             const week = moment(match.created_at).startOf('week').diff(tournamentStart, "weeks") + 1;
+            if (home.is_placeholder || away.is_placeholder) {
+                // Don't announce matches with undecided players
+                continue;
+            }
             groupMatches += `Game Week ${week}: ${homePlayerName} - ${awayPlayerName}\n`;
         }
 
